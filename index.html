@@ -263,7 +263,6 @@
         </div>
     </header>
 
-    <!-- 勤怠操作カード -->
     <div class="card">
         <div class="card-title">
             <span>⏱️ リアルタイム勤怠操作</span>
@@ -289,7 +288,6 @@
         </div>
     </div>
 
-    <!-- スタッフ別・全体の稼働集計サマリー -->
     <div class="card">
         <div class="card-title">📊 稼働時間集計サマリー</div>
         <div class="summary-cards" id="summaryCards">
@@ -304,7 +302,6 @@
         </div>
     </div>
 
-    <!-- 勤怠ログ履歴 -->
     <div class="card">
         <div class="card-title">📋 勤務履歴一覧</div>
         <div class="table-responsive">
@@ -333,16 +330,16 @@
 </div>
 
 <script>
-    let currentState = 'OFF';
-    let startTime = null;
-    let pauseStartTime = null;
-    let totalPauseMs = 0;
-    let timerInterval = null;
-    let logs = [];
+    var currentState = 'OFF';
+    var startTime = null;
+    var pauseStartTime = null;
+    var totalPauseMs = 0;
+    var timerInterval = null;
+    var logs = [];
 
     window.onload = function() {
-        const savedName = localStorage.getItem('gta_web_staff_name');
-        const savedLogs = localStorage.getItem('gta_web_logs');
+        var savedName = localStorage.getItem('gta_web_staff_name');
+        var savedLogs = localStorage.getItem('gta_web_logs');
 
         if (savedName) document.getElementById('staffName').value = savedName;
         if (savedLogs) {
@@ -356,52 +353,53 @@
     };
 
     function saveName() {
-        localStorage.setItem('gta_web_staff_name', document.getElementById('staffName').value.trim());
+        var el = document.getElementById('staffName');
+        if (el) localStorage.setItem('gta_web_staff_name', el.value.trim());
     }
 
     function formatTime(dateStr) {
         if (!dateStr) return '-';
-        const d = new Date(dateStr);
+        var d = new Date(dateStr);
         return d.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
     }
 
     function formatDate(dateStr) {
         if (!dateStr) return '-';
-        const d = new Date(dateStr);
+        var d = new Date(dateStr);
         return (d.getMonth() + 1) + '/' + d.getDate();
     }
 
     function formatDuration(ms) {
-        const sec = Math.floor(ms / 1000);
-        const h = Math.floor(sec / 3600);
-        const m = Math.floor((sec % 3600) / 60);
-        const s = sec % 60;
-        return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+        var sec = Math.floor(ms / 1000);
+        var h = Math.floor(sec / 3600);
+        var m = Math.floor((sec % 3600) / 60);
+        var s = sec % 60;
+        return (h < 10 ? '0' + h : h) + ':' + (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
     }
 
     function formatDurationText(ms) {
-        const sec = Math.floor(ms / 1000);
-        const h = Math.floor(sec / 3600);
-        const m = Math.floor((sec % 3600) / 60);
+        var sec = Math.floor(ms / 1000);
+        var h = Math.floor(sec / 3600);
+        var m = Math.floor((sec % 3600) / 60);
         if (h > 0) return h + '時間' + m + '分';
         return m + '分';
     }
 
     function updateTimer() {
         if (currentState === 'WORKING') {
-            const now = new Date();
-            const elapsed = now - startTime - totalPauseMs;
+            var now = new Date();
+            var elapsed = now - startTime - totalPauseMs;
             document.getElementById('timerDisplay').innerText = formatDuration(elapsed);
         }
     }
 
     function setUIState(state) {
         currentState = state;
-        const badge = document.getElementById('statusBadge');
-        const btnClockIn = document.getElementById('btnClockIn');
-        const btnPause = document.getElementById('btnPause');
-        const btnResume = document.getElementById('btnResume');
-        const btnClockOut = document.getElementById('btnClockOut');
+        var badge = document.getElementById('statusBadge');
+        var btnClockIn = document.getElementById('btnClockIn');
+        var btnPause = document.getElementById('btnPause');
+        var btnResume = document.getElementById('btnResume');
+        var btnClockOut = document.getElementById('btnClockOut');
 
         if (state === 'OFF') {
             badge.className = 'status-badge status-off';
@@ -411,7 +409,7 @@
             btnResume.disabled = true;
             btnClockOut.disabled = true;
             document.getElementById('timerDisplay').innerText = '00:00:00';
-            clearInterval(timerInterval);
+            if (timerInterval) clearInterval(timerInterval);
         } else if (state === 'WORKING') {
             badge.className = 'status-badge status-working';
             badge.innerText = '勤務中';
@@ -430,7 +428,8 @@
     }
 
     function handleClockIn() {
-        const name = document.getElementById('staffName').value.trim();
+        var nameInput = document.getElementById('staffName');
+        var name = nameInput ? nameInput.value.trim() : '';
         if (!name) {
             alert('スタッフ名を入力してください');
             return;
@@ -438,6 +437,7 @@
         startTime = new Date();
         totalPauseMs = 0;
         setUIState('WORKING');
+        if (timerInterval) clearInterval(timerInterval);
         timerInterval = setInterval(updateTimer, 1000);
     }
 
@@ -447,23 +447,24 @@
     }
 
     function handleResume() {
-        const now = new Date();
+        var now = new Date();
         totalPauseMs += (now - pauseStartTime);
         pauseStartTime = null;
         setUIState('WORKING');
     }
 
     function handleClockOut() {
-        const endTime = new Date();
+        var endTime = new Date();
         if (currentState === 'PAUSED' && pauseStartTime) {
             totalPauseMs += (endTime - pauseStartTime);
         }
 
-        const totalElapsed = endTime - startTime;
-        const workMs = Math.max(0, totalElapsed - totalPauseMs);
-        const name = document.getElementById('staffName').value.trim();
+        var totalElapsed = endTime - startTime;
+        var workMs = Math.max(0, totalElapsed - totalPauseMs);
+        var nameInput = document.getElementById('staffName');
+        var name = nameInput ? nameInput.value.trim() : '';
 
-        const newLog = {
+        var newLog = {
             id: Date.now(),
             name: name,
             start: startTime.toISOString(),
@@ -473,13 +474,15 @@
         };
 
         logs.unshift(newLog);
-        localStorage.setItem('gta_web_logs', JSON.stringify(logs));
+        try {
+            localStorage.setItem('gta_web_logs', JSON.stringify(logs));
+        } catch(e) {}
         renderLogs();
         setUIState('OFF');
     }
 
     function renderLogs() {
-        const tbody = document.getElementById('logsTable');
+        var tbody = document.getElementById('logsTable');
         if (logs.length === 0) {
             tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color: var(--text-muted);">履歴はありません</td></tr>';
             document.getElementById('totalShifts').innerText = '0 回';
@@ -487,8 +490,10 @@
             return;
         }
 
-        tbody.innerHTML = logs.map(function(log) {
-            return '<tr>' +
+        var html = '';
+        for (var i = 0; i < logs.length; i++) {
+            var log = logs[i];
+            html += '<tr>' +
                 '<td>' + formatDate(log.start) + '</td>' +
                 '<td><strong>' + escapeHtml(log.name) + '</strong></td>' +
                 '<td>' + formatTime(log.start) + '</td>' +
@@ -496,9 +501,13 @@
                 '<td>' + formatDurationText(log.pauseMs) + '</td>' +
                 '<td><strong style="color: var(--success);">' + formatDurationText(log.workMs) + '</strong></td>' +
             '</tr>';
-        }).join('');
+        }
+        tbody.innerHTML = html;
 
-        const totalMs = logs.reduce(function(sum, item) { return sum + item.workMs; }, 0);
+        var totalMs = 0;
+        for (var j = 0; j < logs.length; j++) {
+            totalMs += logs[j].workMs;
+        }
         document.getElementById('totalShifts').innerText = logs.length + ' 回';
         document.getElementById('totalWorkTime').innerText = formatDurationText(totalMs);
     }
@@ -506,7 +515,9 @@
     function clearLogs() {
         if (confirm('すべての履歴をクリアしますか？')) {
             logs = [];
-            localStorage.removeItem('gta_web_logs');
+            try {
+                localStorage.removeItem('gta_web_logs');
+            } catch(e) {}
             renderLogs();
         }
     }
@@ -517,26 +528,25 @@
             return;
         }
 
-        const latest = logs[0];
-        const text = '【勤務報告】
-' +
-            '名前: ' + latest.name + '
-' +
-            '出勤: ' + formatTime(latest.start) + '
-' +
-            '退勤: ' + formatTime(latest.end) + '
-' +
-            '一時退勤: ' + formatDurationText(latest.pauseMs) + '
-' +
+        var latest = logs[0];
+        var text = '【勤務報告】\n' +
+            '名前: ' + latest.name + '\n' +
+            '出勤: ' + formatTime(latest.start) + '\n' +
+            '退勤: ' + formatTime(latest.end) + '\n' +
+            '一時退勤: ' + formatDurationText(latest.pauseMs) + '\n' +
             '実働時間: ' + formatDurationText(latest.workMs);
         
-        navigator.clipboard.writeText(text).then(function() {
-            alert('Discord用フォーマットでクリップボードにコピーしました！
-Discordにそのまま貼り付けできます。');
-        });
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function() {
+                alert('Discord用フォーマットでクリップボードにコピーしました！\nDiscordにそのまま貼り付けできます。');
+            });
+        } else {
+            alert(text);
+        }
     }
 
     function escapeHtml(str) {
+        if (!str) return '';
         return str.replace(/[&<>"']/g, function(m) {
             return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
         });
