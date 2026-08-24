@@ -346,8 +346,12 @@
 
         if (savedName) document.getElementById('staffName').value = savedName;
         if (savedLogs) {
-            logs = JSON.parse(savedLogs);
-            renderLogs();
+            try {
+                logs = JSON.parse(savedLogs);
+                renderLogs();
+            } catch (e) {
+                logs = [];
+            }
         }
     };
 
@@ -364,7 +368,7 @@
     function formatDate(dateStr) {
         if (!dateStr) return '-';
         const d = new Date(dateStr);
-        return `${d.getMonth() + 1}/${d.getDate()}`;
+        return (d.getMonth() + 1) + '/' + d.getDate();
     }
 
     function formatDuration(ms) {
@@ -372,15 +376,15 @@
         const h = Math.floor(sec / 3600);
         const m = Math.floor((sec % 3600) / 60);
         const s = sec % 60;
-        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
     }
 
     function formatDurationText(ms) {
         const sec = Math.floor(ms / 1000);
         const h = Math.floor(sec / 3600);
         const m = Math.floor((sec % 3600) / 60);
-        if (h > 0) return `${h}時間${m}分`;
-        return `${m}分`;
+        if (h > 0) return h + '時間' + m + '分';
+        return m + '分';
     }
 
     function updateTimer() {
@@ -483,20 +487,19 @@
             return;
         }
 
-        tbody.innerHTML = logs.map(log => `
-            <tr>
-                <td>${formatDate(log.start)}</td>
-                <td><strong>${escapeHtml(log.name)}</strong></td>
-                <td>${formatTime(log.start)}</td>
-                <td>${formatTime(log.end)}</td>
-                <td>${formatDurationText(log.pauseMs)}</td>
-                <td><strong style="color: var(--success);">${formatDurationText(log.workMs)}</strong></td>
-            </tr>
-        `).join('');
+        tbody.innerHTML = logs.map(function(log) {
+            return '<tr>' +
+                '<td>' + formatDate(log.start) + '</td>' +
+                '<td><strong>' + escapeHtml(log.name) + '</strong></td>' +
+                '<td>' + formatTime(log.start) + '</td>' +
+                '<td>' + formatTime(log.end) + '</td>' +
+                '<td>' + formatDurationText(log.pauseMs) + '</td>' +
+                '<td><strong style="color: var(--success);">' + formatDurationText(log.workMs) + '</strong></td>' +
+            '</tr>';
+        }).join('');
 
-        // 集計
-        const totalMs = logs.reduce((sum, item) => sum + item.workMs, 0);
-        document.getElementById('totalShifts').innerText = `${logs.length} 回`;
+        const totalMs = logs.reduce(function(sum, item) { return sum + item.workMs; }, 0);
+        document.getElementById('totalShifts').innerText = logs.length + ' 回';
         document.getElementById('totalWorkTime').innerText = formatDurationText(totalMs);
     }
 
@@ -515,21 +518,28 @@
         }
 
         const latest = logs[0];
-        const text = `【勤務報告】
-名前: ${latest.name}
-出勤: ${formatTime(latest.start)}
-退勤: ${formatTime(latest.end)}
-一時退勤: ${formatDurationText(latest.pauseMs)}
-実働時間: ${formatDurationText(latest.workMs)}`;
+        const text = '【勤務報告】
+' +
+            '名前: ' + latest.name + '
+' +
+            '出勤: ' + formatTime(latest.start) + '
+' +
+            '退勤: ' + formatTime(latest.end) + '
+' +
+            '一時退勤: ' + formatDurationText(latest.pauseMs) + '
+' +
+            '実働時間: ' + formatDurationText(latest.workMs);
         
-        navigator.clipboard.writeText(text).then(() => {
+        navigator.clipboard.writeText(text).then(function() {
             alert('Discord用フォーマットでクリップボードにコピーしました！
 Discordにそのまま貼り付けできます。');
         });
     }
 
     function escapeHtml(str) {
-        return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+        return str.replace(/[&<>"']/g, function(m) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+        });
     }
 </script>
 </body>
