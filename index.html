@@ -272,7 +272,7 @@
         <div class="form-row">
             <div class="form-group">
                 <label for="staffName">スタッフ名</label>
-                <input type="text" id="staffName" placeholder="例: 山田 太郎" onchange="saveName()">
+                <input type="text" id="staffName" placeholder="例: 山田 太郎" oninput="saveName()">
             </div>
         </div>
 
@@ -337,11 +337,14 @@
     var timerInterval = null;
     var logs = [];
 
+    // ページ読み込み時の処理（復元）
     window.onload = function() {
         var savedName = localStorage.getItem('gta_web_staff_name');
         var savedLogs = localStorage.getItem('gta_web_logs');
+        var savedActiveState = localStorage.getItem('gta_web_active_state');
 
         if (savedName) document.getElementById('staffName').value = savedName;
+        
         if (savedLogs) {
             try {
                 logs = JSON.parse(savedLogs);
@@ -350,11 +353,48 @@
                 logs = [];
             }
         }
+
+        // 実行中のタイマー状態を復元
+        if (savedActiveState) {
+            try {
+                var stateObj = JSON.parse(savedActiveState);
+                currentState = stateObj.currentState;
+                startTime = stateObj.startTime ? new Date(stateObj.startTime) : null;
+                pauseStartTime = stateObj.pauseStartTime ? new Date(stateObj.pauseStartTime) : null;
+                totalPauseMs = stateObj.totalPauseMs || 0;
+
+                setUIState(currentState);
+
+                if (currentState === 'WORKING' || currentState === 'PAUSED') {
+                    updateTimer();
+                    timerInterval = setInterval(updateTimer, 1000);
+                }
+            } catch (e) {
+                clearActiveState();
+            }
+        }
     };
 
+    // スタッフ名の保存
     function saveName() {
         var el = document.getElementById('staffName');
         if (el) localStorage.setItem('gta_web_staff_name', el.value.trim());
+    }
+
+    // 稼働中タイマー情報の保存
+    function saveActiveState() {
+        var stateObj = {
+            currentState: currentState,
+            startTime: startTime ? startTime.toISOString() : null,
+            pauseStartTime: pauseStartTime ? pauseStartTime.toISOString() : null,
+            totalPauseMs: totalPauseMs
+        };
+        localStorage.setItem('gta_web_active_state', JSON.stringify(stateObj));
+    }
+
+    // 稼働中タイマー情報の削除
+    function clearActiveState() {
+        localStorage.removeItem('gta_web_active_state');
     }
 
     function formatTime(dateStr) {
@@ -389,7 +429,10 @@
         if (currentState === 'WORKING') {
             var now = new Date();
             var elapsed = now - startTime - totalPauseMs;
-            document.getElementById('timerDisplay').innerText = formatDuration(elapsed);
+            document.getElementById('timerDisplay').innerText = formatDuration(Math.max(0, elapsed));
+        } else if (currentState === 'PAUSED') {
+            var elapsed = pauseStartTime - startTime - totalPauseMs;
+            document.getElementById('timerDisplay').innerText = formatDuration(Math.max(0, elapsed));
         }
     }
 
@@ -437,6 +480,7 @@
         startTime = new Date();
         totalPauseMs = 0;
         setUIState('WORKING');
+        saveActiveState();
         if (timerInterval) clearInterval(timerInterval);
         timerInterval = setInterval(updateTimer, 1000);
     }
@@ -444,6 +488,7 @@
     function handlePause() {
         pauseStartTime = new Date();
         setUIState('PAUSED');
+        saveActiveState();
     }
 
     function handleResume() {
@@ -451,6 +496,7 @@
         totalPauseMs += (now - pauseStartTime);
         pauseStartTime = null;
         setUIState('WORKING');
+        saveActiveState();
     }
 
     function handleClockOut() {
@@ -477,6 +523,8 @@
         try {
             localStorage.setItem('gta_web_logs', JSON.stringify(logs));
         } catch(e) {}
+        
+        clearActiveState();
         renderLogs();
         setUIState('OFF');
     }
